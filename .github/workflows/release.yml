@@ -1,0 +1,56 @@
+name: Publish release
+on:
+  push:
+    tags: ['v[0-9]*']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: plip-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: macos-14
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate release version
+        id: version
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          TAG="v$VERSION"
+          if [ "$EVENT_NAME" = push ] && [ "$GITHUB_REF_NAME" != "$TAG" ]; then
+            echo 'The release tag must match VERSION.' >&2
+            exit 1
+          fi
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            [ "$(git rev-parse "$TAG^{commit}")" = "$GITHUB_SHA" ] || { echo 'This version already identifies another commit. Bump VERSION.' >&2; exit 1; }
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Test
+        run: bash Scripts/test.sh
+      - name: Build application, PKG, and portable ZIP
+        run: bash Scripts/build.sh --pkg
+      - name: Verify bundle and privacy
+        run: python3 Scripts/verify-release.py
+      - name: Publish installer and checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/Plip-arm64.pkg dist/Plip-arm64.zip dist/SHA256SUMS.txt --clobber
+          else
+            gh release create "$TAG" --target "$GITHUB_SHA" --title "Plip $VERSION" \
+              --notes-file docs/RELEASE-NOTES.md \
+              dist/Plip-arm64.pkg dist/Plip-arm64.zip dist/SHA256SUMS.txt
+          fi

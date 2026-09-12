@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>AppName</key>
+	<string>Plip</string>
+	<key>Appearance</key>
+	<dict>
+		<key>AccentColor</key>
+		<string>Indigo</string>
+		<key>UseSystemTheme</key>
+		<true/>
+	</dict>
+	<key>Data</key>
+	<data>
+	3q2+7w==
+	</data>
+	<key>EmptyDictionary</key>
+	<dict/>
+	<key>Enabled</key>
+	<true/>
+	<key>LastOpened</key>
+	<date>2026-09-13T00:00:00Z</date>
+	<key>LaunchCount</key>
+	<integer>42</integer>
+	<key>RecentFiles</key>
+	<array>
+		<string>Settings.plist</string>
+		<string>Preferences.plist</string>
+	</array>
+	<key>RefreshInterval</key>
+	<real>2.5</real>
+</dict>
+</plist>

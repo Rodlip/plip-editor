@@ -1,0 +1,35 @@
+name: Build and test
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Test plist editing and persistence
+        run: bash Scripts/test.sh
+      - name: Build Apple Silicon app and installer
+        run: bash Scripts/build.sh --pkg
+      - name: Verify bundle and privacy
+        run: python3 Scripts/verify-release.py
+      - name: Upload installable build
+        uses: actions/upload-artifact@v4
+        with:
+          name: Plip-arm64-${{ github.sha }}
+          path: |
+            dist/Plip-arm64.pkg
+            dist/Plip-arm64.zip
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
