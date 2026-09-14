@@ -4,8 +4,8 @@
     <key>CFBundleName</key><string>Plip</string>
     <key>CFBundleDisplayName</key><string>Plip</string>
     <key>CFBundleIdentifier</key><string>com.plip.editor</string>
-    <key>CFBundleVersion</key><string>1.0.1</string>
-    <key>CFBundleShortVersionString</key><string>1.0.1</string>
+    <key>CFBundleVersion</key><string>1.1.0</string>
+    <key>CFBundleShortVersionString</key><string>1.1.0</string>
     <key>CFBundleExecutable</key><string>Plip</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleIconFile</key><string>PlipIcon.icns</string>

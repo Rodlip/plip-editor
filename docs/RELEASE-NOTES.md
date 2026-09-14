@@ -6,6 +6,14 @@ A lightweight native property list editor for **Apple Silicon · macOS 13+**.
 - **Plip-arm64.zip** — portable app; unzip and drag Plip into Applications.
 - **SHA256SUMS.txt** — SHA-256 checksums for both downloads.
 
+### New in 1.1.0
+
+- A welcome screen with a large drag-and-drop area and click-to-open action.
+- Dropped plists open from their original location, without copying or moving them.
+- Date fields display in the user's local region and time zone.
+- A native local date/time picker with a UTC preview and daylight-saving-aware conversion.
+- Regression checks for original-file references, date precision, local input, and XML/binary date persistence.
+
 ### Included
 
 - Native tree editor for XML and binary property lists.

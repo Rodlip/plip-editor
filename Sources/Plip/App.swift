@@ -15,7 +15,22 @@ enum PlipApp {
 #endif
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
+    private var welcome: WelcomeController?
+
+    func showWelcome() {
+        if welcome == nil { welcome = WelcomeController() }
+        welcome?.showWindow(nil)
+        welcome?.window?.makeKeyAndOrderFront(nil)
+    }
+
+    @objc private func documentBecameMain(_ notification: Notification) {
+        if let window = notification.object as? NSWindow, window.windowController?.document is NSDocument {
+            welcome?.close()
+        }
+    }
+
     func applicationWillFinishLaunching(_ notification: Notification) {
+        NotificationCenter.default.addObserver(self, selector: #selector(documentBecameMain(_:)), name: NSWindow.didBecomeMainNotification, object: nil)
         if let url = Bundle.main.url(forResource: "PlipIcon", withExtension: "icns"), let icon = NSImage(contentsOf: url) {
             NSApp.applicationIconImage = icon
         }
@@ -103,7 +118,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
     func applicationDidFinishLaunching(_ notification: Notification) { NSApp.activate(ignoringOtherApps: true) }
-    func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool { true }
+    func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool { showWelcome(); return false }
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag { showWelcome() }
+        return true
+    }
 }
 
 @objc(PlistDocument)
@@ -244,7 +263,7 @@ final class EditorController: NSWindowController, NSOutlineViewDataSource, NSOut
     }
 
     func matches(_ node: PlistNode) -> Bool {
-        query.isEmpty || node.displayKey.localizedCaseInsensitiveContains(query) || node.text.localizedCaseInsensitiveContains(query) || node.children.contains(where: matches)
+        query.isEmpty || node.displayKey.localizedCaseInsensitiveContains(query) || node.displayText.localizedCaseInsensitiveContains(query) || node.text.localizedCaseInsensitiveContains(query) || node.children.contains(where: matches)
     }
     func visibleChildren(_ node: PlistNode?) -> [PlistNode] {
         let children = node?.children ?? [plist.root]
@@ -258,7 +277,7 @@ final class EditorController: NSWindowController, NSOutlineViewDataSource, NSOut
         let id = column.identifier
         let cell = NSTableCellView()
         cell.identifier = id
-        let field = NSTextField(labelWithString: id.rawValue == "key" ? node.displayKey : id.rawValue == "type" ? node.kind.rawValue : node.text)
+        let field = NSTextField(labelWithString: id.rawValue == "key" ? node.displayKey : id.rawValue == "type" ? node.kind.rawValue : node.displayText)
         field.lineBreakMode = .byTruncatingTail
         field.font = id.rawValue == "value" && [.integer, .real, .data, .date].contains(node.kind) ? .monospacedSystemFont(ofSize: 12, weight: .regular) : .systemFont(ofSize: 13, weight: id.rawValue == "key" && node.kind.isContainer ? .medium : .regular)
         field.textColor = id.rawValue == "type" || node.kind.isContainer && id.rawValue == "value" ? .secondaryLabelColor : .labelColor

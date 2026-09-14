@@ -26,6 +26,8 @@ Plip makes `.plist` files easy to explore and edit. Expand nested dictionaries a
 | **A clear tree view** | Browse nested keys, types, and values. Filter the tree without losing the surrounding structure. |
 | **Every standard plist type** | Dictionaries, arrays, strings, integers, reals, Booleans, dates, and data. |
 | **Thoughtful editing** | Validate values, prevent duplicate keys, reorder arrays, and undo or redo changes. |
+| **Drop to open** | A welcome screen opens existing plists by drag-and-drop or click. Files stay in their original locations. |
+| **Local dates and times** | Date fields display in your region and time zone. A native date picker edits local time and saves the same instant correctly. |
 | **Familiar file handling** | File/Edit menus, native Open and Save dialogs, recent files, and multiple document windows. |
 | **Finder integration** | Open `.plist` files with Plip from Finder's **Open With** menu. |
 | **Small and local** | No web views, third-party runtime, accounts, telemetry, or network services. Follows the Mac's light or dark appearance. |
@@ -36,7 +38,9 @@ Plip makes `.plist` files easy to explore and edit. Expand nested dictionaries a
 
 1. [Download the latest installer](https://github.com/Rodlip/plip-editor/releases/latest/download/Plip-arm64.pkg).
 2. Open the `.pkg` and follow the installer. Plip installs in **Applications**.
-3. Launch Plip, then open a plist with **File → Open…** or Finder → **Open With → Plip**.
+3. Launch Plip and drop a `.plist` onto the welcome area, or click the area to choose one. **File → Open…** and Finder → **Open With → Plip** also work.
+
+Dropping a file opens the original in place; it does not copy, move, or import it. **Save** writes back to that file. Use **Save As…** if you want a separate copy. Choose **Create a New Plist** or **File → New** to start from scratch.
 
 Prefer a drag-and-drop install? [Download the ZIP](https://github.com/Rodlip/plip-editor/releases/latest/download/Plip-arm64.zip), unzip it, and drag **Plip.app** into **Applications**.
 
@@ -53,7 +57,7 @@ Open the included [Welcome.plist](Examples/Welcome.plist) to try every common va
 - Select an item and choose **Edit Value**, or double-click its row. Strings preserve whitespace and line breaks.
 - **Add Item** adds a child to the selected collection, or a sibling beside a selected value. New documents start with a dictionary; edit **Root** to change its type.
 - Use **Edit → Move Item Up / Down** to change array order. Dictionaries require unique keys.
-- Dates accept **ISO 8601 with a time zone** and display in UTC. Data is edited as **hexadecimal bytes**, such as `DE AD BE EF`.
+- Date fields display in your Mac’s region and time zone. Edit the **native local date/time picker**; the UTC preview shows the same instant that will be saved. Daylight-saving offsets follow the selected date. XML plist dates are written as UTC, while binary dates retain their absolute timestamp. Date-looking strings are left as strings. Data is edited as **hexadecimal bytes**, such as `DE AD BE EF`.
 - Choose **XML** or **Binary** in the footer, then save. Existing files retain their format until you change it.
 
 | Shortcut | Action |
@@ -91,7 +95,7 @@ The build explicitly targets `arm64-apple-macos13.0`. There are no packages to d
 | `Plip-arm64.zip` | Portable application |
 | `SHA256SUMS.txt` | Download checksums |
 
-The test suite covers all value types, XML/binary round trips, input validation, snapshots, document change tracking, and undo/redo. Release verification checks the icon, architecture, signatures, package contents, checksums, and accidental personal identifiers.
+The test suite covers all value types, XML/binary round trips, input validation, snapshots, document change tracking, undo/redo, drop-to-open file references, and local dates across daylight-saving changes. Release verification checks the icon, architecture, signatures, package contents, checksums, and accidental personal identifiers.
 
 ## Edit → test → release
 

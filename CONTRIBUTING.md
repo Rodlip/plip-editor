@@ -6,7 +6,8 @@
 | :--- | :--- |
 | `Sources/Plip/PlistNode.swift` | Typed tree, decoding, validation, and snapshots |
 | `Sources/Plip/App.swift` | App menus, NSDocument persistence, and native tree editor |
-| `Sources/Plip/ItemEditor.swift` | Property editing sheet |
+| `Sources/Plip/ItemEditor.swift` | Property editing sheet and local date/time control |
+| `Sources/Plip/WelcomeController.swift` | Welcome screen and opening dropped file URLs |
 | `Resources/Info.plist` | Bundle metadata and Finder document associations |
 | `VERSION` | Single source of truth for app and installer versions |
 | `Scripts/build.sh` | Native arm64 build, signing, PKG, ZIP, and checksums |

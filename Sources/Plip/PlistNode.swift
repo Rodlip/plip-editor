@@ -96,6 +96,20 @@ final class PlistNode: NSObject {
         return formatter
     }()
 
+    var displayText: String {
+        guard kind == .date, let date = scalar as? Date else { return text }
+        return Self.localDateText(date)
+    }
+
+    static func localDateText(_ date: Date, locale: Locale = .autoupdatingCurrent, timeZone: TimeZone = .autoupdatingCurrent) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.timeZone = timeZone
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .long
+        return formatter.string(from: date)
+    }
+
     var text: String {
         switch kind {
         case .dictionary, .array: return "\(children.count) \(children.count == 1 ? "item" : "items")"

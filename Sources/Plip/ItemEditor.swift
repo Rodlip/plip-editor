@@ -9,6 +9,13 @@ final class ItemEditor: NSObject {
     let keyField = NSTextField()
     let typePicker = NSPopUpButton()
     let value = NSTextView()
+    let valueScroll = NSScrollView()
+    let datePicker = NSDatePicker()
+    let dateArea = NSStackView()
+    let dateZone = NSTextField(labelWithString: "")
+    let dateUTC = NSTextField(labelWithString: "")
+    let localTimeZone = TimeZone.current
+    var dateDraft: Date
     let hint = NSTextField(wrappingLabelWithString: "")
     let error = NSTextField(wrappingLabelWithString: "")
     var drafts: [PlistKind: String] = [:]
@@ -18,11 +25,12 @@ final class ItemEditor: NSObject {
         guard let window = editor.window, window.attachedSheet == nil else { return }
         let sheet = ItemEditor(node: node, parent: parent, editor: editor, isNew: isNew)
         window.beginSheet(sheet.panel) { _ in sheet.panel.orderOut(nil) }
-        sheet.panel.makeFirstResponder(parent?.kind == .dictionary ? sheet.keyField : sheet.value)
+        sheet.panel.makeFirstResponder(parent?.kind == .dictionary ? sheet.keyField : node.kind == .date ? sheet.datePicker : sheet.value)
     }
 
     init(node: PlistNode, parent: PlistNode?, editor: EditorController, isNew: Bool) {
         self.node = node; self.parent = parent; self.editor = editor; self.isNew = isNew; self.draftKind = node.kind
+        self.dateDraft = node.scalar as? Date ?? Date(timeIntervalSince1970: floor(Date().timeIntervalSince1970))
         super.init()
         buildUI()
     }
@@ -46,7 +54,7 @@ final class ItemEditor: NSObject {
         grid.column(at: 0).xPlacement = .leading; grid.column(at: 1).xPlacement = .fill
         let valueLabel = NSTextField(labelWithString: "Value")
         valueLabel.font = .systemFont(ofSize: 13, weight: .medium)
-        let scroll = NSScrollView()
+        let scroll = valueScroll
         scroll.borderType = .bezelBorder; scroll.hasVerticalScroller = true; scroll.autohidesScrollers = true
         value.isRichText = false; value.isAutomaticQuoteSubstitutionEnabled = false; value.isAutomaticDashSubstitutionEnabled = false
         value.isAutomaticTextReplacementEnabled = false; value.isAutomaticSpellingCorrectionEnabled = false
@@ -58,16 +66,34 @@ final class ItemEditor: NSObject {
         value.textContainer?.widthTracksTextView = true
         value.setAccessibilityLabel("Property value")
         scroll.documentView = value
+        datePicker.datePickerStyle = .textFieldAndStepper
+        datePicker.datePickerElements = [.yearMonthDay, .hourMinuteSecond]
+        datePicker.locale = .current
+        var calendar = Calendar.current
+        calendar.timeZone = localTimeZone
+        datePicker.calendar = calendar
+        datePicker.timeZone = localTimeZone
+        datePicker.dateValue = dateDraft
+        datePicker.presentsCalendarOverlay = true
+        datePicker.target = self; datePicker.action = #selector(dateChanged(_:))
+        datePicker.setAccessibilityLabel("Local date and time")
+        dateZone.font = .systemFont(ofSize: 12); dateZone.textColor = .secondaryLabelColor
+        dateUTC.font = .monospacedSystemFont(ofSize: 11, weight: .regular); dateUTC.textColor = .secondaryLabelColor
+        dateArea.orientation = .vertical; dateArea.spacing = 14
+        for view in [datePicker, dateZone, dateUTC] { dateArea.addArrangedSubview(view) }
+        updateDatePreview()
         hint.font = .systemFont(ofSize: 11); hint.textColor = .secondaryLabelColor
         error.font = .systemFont(ofSize: 11); error.textColor = .systemRed
         let cancel = NSButton(title: "Cancel", target: self, action: #selector(cancel(_:))); cancel.bezelStyle = .rounded; cancel.keyEquivalent = "\u{1b}"
         let save = NSButton(title: isNew ? "Add Item" : "Apply", target: self, action: #selector(apply(_:))); save.bezelStyle = .rounded; save.keyEquivalent = "\r"
-        for view in [title, grid, valueLabel, scroll, hint, error, cancel, save] { view.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(view) }
+        for view in [title, grid, valueLabel, scroll, dateArea, hint, error, cancel, save] { view.translatesAutoresizingMaskIntoConstraints = false; content.addSubview(view) }
         NSLayoutConstraint.activate([
             title.topAnchor.constraint(equalTo: content.topAnchor, constant: 22), title.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 24),
             grid.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 20), grid.leadingAnchor.constraint(equalTo: title.leadingAnchor), grid.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -24),
             valueLabel.topAnchor.constraint(equalTo: grid.bottomAnchor, constant: 20), valueLabel.leadingAnchor.constraint(equalTo: title.leadingAnchor),
             scroll.topAnchor.constraint(equalTo: valueLabel.bottomAnchor, constant: 7), scroll.leadingAnchor.constraint(equalTo: title.leadingAnchor), scroll.trailingAnchor.constraint(equalTo: grid.trailingAnchor), scroll.heightAnchor.constraint(equalToConstant: 150),
+            dateArea.centerXAnchor.constraint(equalTo: scroll.centerXAnchor), dateArea.centerYAnchor.constraint(equalTo: scroll.centerYAnchor),
+            dateArea.widthAnchor.constraint(lessThanOrEqualTo: scroll.widthAnchor),
             hint.topAnchor.constraint(equalTo: scroll.bottomAnchor, constant: 8), hint.leadingAnchor.constraint(equalTo: title.leadingAnchor), hint.trailingAnchor.constraint(equalTo: grid.trailingAnchor),
             error.topAnchor.constraint(equalTo: hint.bottomAnchor, constant: 7), error.leadingAnchor.constraint(equalTo: title.leadingAnchor), error.trailingAnchor.constraint(equalTo: grid.trailingAnchor),
             save.trailingAnchor.constraint(equalTo: grid.trailingAnchor), save.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -20),
@@ -85,7 +111,18 @@ final class ItemEditor: NSObject {
         error.stringValue = ""
         updateHint()
     }
+    @objc func dateChanged(_ sender: Any?) {
+        dateDraft = datePicker.dateValue
+        updateDatePreview()
+    }
+    func updateDatePreview() {
+        let zone = localTimeZone.abbreviation(for: dateDraft) ?? localTimeZone.identifier
+        dateZone.stringValue = "Local time: \(localTimeZone.identifier) (\(zone))"
+        dateUTC.stringValue = "UTC: " + PlistNode.dateFormatter.string(from: dateDraft)
+    }
     func updateHint() {
+        valueScroll.isHidden = draftKind == .date
+        dateArea.isHidden = draftKind != .date
         value.isEditable = !draftKind.isContainer
         value.backgroundColor = draftKind.isContainer ? .controlBackgroundColor : .textBackgroundColor
         switch draftKind {
@@ -95,7 +132,7 @@ final class ItemEditor: NSObject {
         case .integer: hint.stringValue = "A whole number, such as 42 or −7."
         case .real: hint.stringValue = "A decimal number, such as 3.14 or 1.5e3."
         case .boolean: hint.stringValue = "Enter true or false."
-        case .date: hint.stringValue = "ISO 8601 with a time zone, e.g. 2026-01-01T12:00:00Z. Displayed in UTC."
+        case .date: hint.stringValue = "Enter your local date and time. The same instant is saved in the plist; XML dates use UTC."
         case .data: hint.stringValue = "Hexadecimal bytes, e.g. DE AD BE EF. Whitespace is optional."
         }
         if node.kind.isContainer && node.kind != draftKind && !node.children.isEmpty {
@@ -104,14 +141,18 @@ final class ItemEditor: NSObject {
     }
     @objc func cancel(_ sender: Any?) { panel.sheetParent?.endSheet(panel, returnCode: .cancel) }
     @objc func apply(_ sender: Any?) {
+        guard panel.makeFirstResponder(nil) else { return }
         let key = parent?.kind == .dictionary ? keyField.stringValue : node.key
         if parent?.kind == .dictionary, parent!.children.contains(where: { $0 !== node && $0.key == key }) {
             error.stringValue = "This dictionary already has a property named “\(key)”. Choose a unique key."
             panel.makeFirstResponder(keyField); return
         }
         do {
-            let scalar = draftKind == node.kind && value.string == node.text ? node.scalar : try PlistNode.parse(value.string, as: draftKind)
-            if !isNew && key == node.key && draftKind == node.kind && (draftKind.isContainer || value.string == node.text) { cancel(nil); return }
+            let scalar: Any
+            if draftKind == .date { scalar = dateDraft }
+            else { scalar = draftKind == node.kind && value.string == node.text ? node.scalar : try PlistNode.parse(value.string, as: draftKind) }
+            let unchanged = draftKind == .date ? (node.scalar as? Date) == dateDraft : (draftKind.isContainer || value.string == node.text)
+            if !isNew && key == node.key && draftKind == node.kind && unchanged { cancel(nil); return }
             editor.plist.change(isNew ? "Add Item" : "Edit Item") {
                 if node.kind != draftKind {
                     if node.kind.isContainer && draftKind.isContainer {
